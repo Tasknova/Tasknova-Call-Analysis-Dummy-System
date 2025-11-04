@@ -8,10 +8,13 @@ export default defineConfig(({ mode }) => ({
   server: {
     port: 3000,
     strictPort: false, // Allow Vite to try other ports if 3000 is in use
+    headers: {
+      'Cache-Control': 'no-store',
+    },
   },
   plugins: [
     react({
-      fastRefresh: false,
+      fastRefresh: true,
       include: "**/*.{jsx,tsx}",
     }), 
     mode === "development" && componentTagger()
@@ -23,6 +26,7 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     include: ["react", "react-dom"],
+    force: true,
   },
   build: {
     rollupOptions: {

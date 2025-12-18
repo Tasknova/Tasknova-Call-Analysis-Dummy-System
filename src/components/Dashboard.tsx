@@ -184,8 +184,21 @@ export default function Dashboard({ onShowProfile }: DashboardProps) {
 
   const handleRetryRecording = async (recording: any, analysis: any) => {
     const WEBHOOK_URL = "https://n8nautomation.site/webhook/ad2aa239-7a2f-467d-a95a-a66a2ca43537";
+    const { supabase } = await import('@/lib/supabase');
     
     try {
+      // Update status to processing IMMEDIATELY before sending webhook
+      if (analysis?.id) {
+        await supabase
+          .from('analyses')
+          .update({ status: 'processing' })
+          .eq('id', analysis.id);
+      }
+
+      // Invalidate queries immediately to reflect the status change
+      queryClient.invalidateQueries({ queryKey: ['recordings'] });
+      queryClient.invalidateQueries({ queryKey: ['analyses'] });
+
       toast({
         title: "Retrying Analysis",
         description: "Sending recording for reprocessing...",
@@ -208,28 +221,27 @@ export default function Dashboard({ onShowProfile }: DashboardProps) {
       });
 
       if (response.ok) {
-        // Update analysis status to processing
-        const { supabase } = await import('@/lib/supabase');
-        if (analysis?.id) {
-          await supabase
-            .from('analyses')
-            .update({ status: 'processing' })
-            .eq('id', analysis.id);
-        }
-
         toast({
           title: "Retry Successful",
           description: "Your recording has been queued for reprocessing.",
         });
-        
-        // Refresh the data
-        queryClient.invalidateQueries({ queryKey: ['recordings'] });
-        queryClient.invalidateQueries({ queryKey: ['analyses'] });
       } else {
         throw new Error(`Webhook returned ${response.status}`);
       }
     } catch (error) {
       console.error('Retry failed:', error);
+      
+      // Revert status back to failed if webhook fails
+      if (analysis?.id) {
+        await supabase
+          .from('analyses')
+          .update({ status: 'failed' })
+          .eq('id', analysis.id);
+        
+        queryClient.invalidateQueries({ queryKey: ['recordings'] });
+        queryClient.invalidateQueries({ queryKey: ['analyses'] });
+      }
+      
       toast({
         title: "Retry Failed",
         description: "Failed to send recording for reprocessing. Please try again.",

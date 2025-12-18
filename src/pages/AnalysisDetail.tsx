@@ -133,7 +133,7 @@ export default function AnalysisDetail() {
       <header className="border-b bg-card px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => navigate('/?tab=recordings')}>
+            <Button variant="ghost" onClick={() => navigate('/?view=dashboard&tab=recordings')}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Recordings
             </Button>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import LandingPage from "@/components/LandingPage";
 import Dashboard from "@/components/Dashboard";
 import ProfilePage from "@/components/ProfilePage";
@@ -6,7 +7,9 @@ import ProfilePage from "@/components/ProfilePage";
 type ViewType = 'landing' | 'dashboard' | 'profile';
 
 const Index = () => {
-  const [currentView, setCurrentView] = useState<ViewType>('landing');
+  const [searchParams] = useSearchParams();
+  const initialView = searchParams.get('view') === 'dashboard' ? 'dashboard' : 'landing';
+  const [currentView, setCurrentView] = useState<ViewType>(initialView);
 
   const handleGetStarted = () => {
     setCurrentView('dashboard');

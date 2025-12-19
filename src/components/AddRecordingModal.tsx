@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,9 +7,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/lib/supabase";
-import { Loader2, Upload, FileAudio, FileText } from "lucide-react";
+import { supabase, Lead } from "@/lib/supabase";
+import { Loader2, Upload, FileAudio, FileText, Search, Plus, User } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import AddLeadModal from "./AddLeadModal";
+import { format } from "date-fns";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface AddRecordingModalProps {
   open: boolean;
@@ -142,8 +149,46 @@ export default function AddRecordingModal({ open, onOpenChange, onRecordingAdded
   const [transcript, setTranscript] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [selectedLead, setSelectedLead] = useState<string | null>(null);
+  const [leadSearchOpen, setLeadSearchOpen] = useState(false);
+  const [leadSearchQuery, setLeadSearchQuery] = useState("");
+  const [isAddLeadModalOpen, setIsAddLeadModalOpen] = useState(false);
+  const [callDate, setCallDate] = useState<Date | undefined>(new Date());
+  const [callTime, setCallTime] = useState<string>(format(new Date(), "HH:mm"));
   const { toast } = useToast();
   const { user } = useAuth();
+
+  // Fetch leads on component mount and when add lead modal closes
+  useEffect(() => {
+    if (open && user) {
+      fetchLeads();
+    }
+  }, [open, user]);
+
+  // Refetch leads when AddLeadModal closes
+  useEffect(() => {
+    if (!isAddLeadModalOpen && open && user) {
+      fetchLeads();
+    }
+  }, [isAddLeadModalOpen, open, user]);
+
+  const fetchLeads = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('leads')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('name', { ascending: true });
+
+      if (error) throw error;
+      setLeads(data || []);
+    } catch (error) {
+      console.error('Error fetching leads:', error);
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -257,15 +302,25 @@ export default function AddRecordingModal({ open, onOpenChange, onRecordingAdded
       }
 
       // Step 3: Insert recording into database
+      // Combine date and time for call_date
+      let callDateTime: string | null = null;
+      if (callDate && callTime) {
+        const [hours, minutes] = callTime.split(':');
+        const dateTime = new Date(callDate);
+        dateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        callDateTime = dateTime.toISOString();
+      }
+
       const { data: recording, error: dbError } = await supabase
         .from('recordings')
         .insert({
           user_id: user.id,
+          lead_id: selectedLead,
           file_name: fileName.trim(),
           file_size: fileSize,
           stored_file_url: fileUrl,
           transcript: inputMode === "transcript" ? transcript.trim() : null,
-          status: 'uploaded'
+          call_date: callDateTime
         })
         .select()
         .single();
@@ -283,16 +338,30 @@ export default function AddRecordingModal({ open, onOpenChange, onRecordingAdded
           recording_id: recording.id,
           user_id: user.id,
           status: 'pending',
-          sentiment_score: null,
+          sentiments_score: null,
           engagement_score: null,
           confidence_score_executive: null,
           confidence_score_person: null,
-          objections_handled: null,
+          participants: null,
+          lead_type: null,
+          objections_handeled: null,
+          no_of_objections_detected: null,
+          no_of_objections_handeled: null,
           next_steps: null,
           improvements: null,
           call_outcome: null,
-          detailed_call_analysis: null,
-          short_summary: null
+          short_summary: null,
+          lead_type_explanation: null,
+          sentiments_explanation: null,
+          engagement_explanation: null,
+          confidence_explanation_executive: null,
+          confidence_explanation_person: null,
+          objections_detected: null,
+          objections_handling_details: null,
+          next_steps_detailed: null,
+          improvements_for_team: null,
+          call_outcome_rationale: null,
+          evidence_quotes: null
         })
         .select()
         .single();
@@ -308,7 +377,7 @@ export default function AddRecordingModal({ open, onOpenChange, onRecordingAdded
         recording_id: recording.id,
         analysis_id: analysis?.id || null,
         recording_name: fileName.trim(),
-        recording_url: fileUrl,
+        recording_url: inputMode === "audio" ? fileUrl : null,
         transcript: inputMode === "transcript" ? transcript.trim() : null
       };
 
@@ -324,6 +393,9 @@ export default function AddRecordingModal({ open, onOpenChange, onRecordingAdded
       setSelectedFile(null);
       setFileName("");
       setTranscript("");
+      setSelectedLead(null);
+      setCallDate(new Date());
+      setCallTime(format(new Date(), "HH:mm"));
       setUploadProgress(0);
       onOpenChange(false);
       
@@ -357,11 +429,15 @@ export default function AddRecordingModal({ open, onOpenChange, onRecordingAdded
     setSelectedFile(null);
     setFileName("");
     setTranscript("");
+    setSelectedLead(null);
+    setCallDate(new Date());
+    setCallTime(format(new Date(), "HH:mm"));
     setUploadProgress(0);
     onOpenChange(false);
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
@@ -372,7 +448,7 @@ export default function AddRecordingModal({ open, onOpenChange, onRecordingAdded
               className="h-5 w-auto"
             />
             <Upload className="h-5 w-5" />
-            Add New Recording
+            Add New Call
           </DialogTitle>
           <DialogDescription>
             Upload an audio/video file or paste a transcript for analysis by <span className="font-semibold text-accent-blue">Tasknova</span> AI.
@@ -455,6 +531,132 @@ export default function AddRecordingModal({ open, onOpenChange, onRecordingAdded
             </p>
           </div>
 
+          {/* Lead Selection */}
+          <div className="space-y-2">
+            <Label htmlFor="lead-select">Associated Lead (Optional)</Label>
+            <Popover open={leadSearchOpen} onOpenChange={setLeadSearchOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={leadSearchOpen}
+                  className="w-full justify-between"
+                  disabled={isLoading}
+                >
+                  {selectedLead
+                    ? leads.find((lead) => lead.id === selectedLead)?.name
+                    : "Select a lead..."}
+                  <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[400px] p-0" align="start">
+                <Command>
+                  <CommandInput 
+                    placeholder="Search leads..." 
+                    value={leadSearchQuery}
+                    onValueChange={setLeadSearchQuery}
+                  />
+                  <CommandList>
+                    <CommandEmpty>No lead found.</CommandEmpty>
+                    <CommandGroup heading="Leads">
+                      {leads.map((lead) => (
+                        <CommandItem
+                          key={lead.id}
+                          value={lead.name}
+                          onSelect={() => {
+                            setSelectedLead(lead.id);
+                            setLeadSearchOpen(false);
+                          }}
+                        >
+                          <User className="mr-2 h-4 w-4" />
+                          <div className="flex flex-col">
+                            <span className="font-medium">{lead.name}</span>
+                            <span className="text-xs text-muted-foreground">{lead.email}</span>
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                    <CommandSeparator />
+                    <CommandGroup>
+                      <CommandItem
+                        onSelect={() => {
+                          setLeadSearchOpen(false);
+                          setIsAddLeadModalOpen(true);
+                        }}
+                        className="text-accent-blue"
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create New Lead
+                      </CommandItem>
+                      {selectedLead && (
+                        <CommandItem
+                          onSelect={() => {
+                            setSelectedLead(null);
+                            setLeadSearchOpen(false);
+                          }}
+                          className="text-muted-foreground"
+                        >
+                          Clear Selection
+                        </CommandItem>
+                      )}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+            <p className="text-xs text-muted-foreground">
+              Associate this recording with a lead for better organization.
+            </p>
+          </div>
+
+          {/* Call Date and Time */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="call-date">Call Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !callDate && "text-muted-foreground"
+                    )}
+                    disabled={isLoading}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {callDate ? format(callDate, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={callDate}
+                    onSelect={setCallDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              <p className="text-xs text-muted-foreground">
+                When did this call take place?
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="call-time">Call Time</Label>
+              <Input
+                id="call-time"
+                type="time"
+                value={callTime}
+                onChange={(e) => setCallTime(e.target.value)}
+                disabled={isLoading}
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground">
+                Time of the call
+              </p>
+            </div>
+          </div>
+
           {isLoading && uploadProgress > 0 && (
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
@@ -491,5 +693,16 @@ export default function AddRecordingModal({ open, onOpenChange, onRecordingAdded
         </form>
       </DialogContent>
     </Dialog>
+
+    {/* Add Lead Modal - Rendered outside main dialog to avoid z-index issues */}
+    <AddLeadModal 
+      isOpen={isAddLeadModalOpen}
+      onClose={() => setIsAddLeadModalOpen(false)}
+      onLeadAdded={(leadId) => {
+        setSelectedLead(leadId);
+        fetchLeads(); // Refresh leads list
+      }}
+    />
+    </>
   );
 }

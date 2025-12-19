@@ -27,9 +27,10 @@ interface AddLeadModalProps {
   isOpen: boolean;
   onClose: () => void;
   defaultGroupId?: string;
+  onLeadAdded?: (leadId: string) => void;
 }
 
-export default function AddLeadModal({ isOpen, onClose, defaultGroupId }: AddLeadModalProps) {
+export default function AddLeadModal({ isOpen, onClose, defaultGroupId, onLeadAdded }: AddLeadModalProps) {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -58,7 +59,7 @@ export default function AddLeadModal({ isOpen, onClose, defaultGroupId }: AddLea
     }
 
     try {
-      await createLead.mutateAsync({
+      const newLead = await createLead.mutateAsync({
         name: formData.name.trim(),
         email: formData.email.trim(),
         contact: formData.contact.trim(),
@@ -79,6 +80,11 @@ export default function AddLeadModal({ isOpen, onClose, defaultGroupId }: AddLea
         description: "",
         group_id: defaultGroupId || "none",
       });
+
+      // Call callback with new lead ID
+      if (onLeadAdded && newLead) {
+        onLeadAdded(newLead.id);
+      }
 
       onClose();
     } catch (error) {

@@ -9,34 +9,50 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 export interface Recording {
   id: string
   user_id: string
-  drive_file_id?: string
+  lead_id?: string
   file_name?: string
   file_size?: number
   stored_file_url?: string
-  status?: 'processing' | 'transcribing' | 'analyzing' | 'completed' | 'failed' | 'queued' | 'pending' | 'uploaded'
   duration_seconds?: number
   transcript?: string
+  call_date?: string
   created_at: string
-  updated_at: string
+  leads?: Lead // Joined data
 }
 
 export interface Analysis {
   id: string
   recording_id?: string
   user_id: string
-  sentiment_score?: number
+  status?: string
+  sentiments_score?: number
   engagement_score?: number
   confidence_score_executive?: number
   confidence_score_person?: number
-  objections_handled?: string
+  participants?: {
+    count?: number
+    names?: string
+  }
+  lead_type?: string
+  objections_handeled?: string
+  no_of_objections_detected?: number
+  no_of_objections_handeled?: number
   next_steps?: string
   improvements?: string
   call_outcome?: string
-  detailed_call_analysis?: any
   short_summary?: string
-  participants?: any // JSON object containing participant information
-  objections_raised?: number // Number of objections raised during the call
-  objections_tackled?: number // Number of objections successfully tackled/handled
+  // Detailed explanations
+  lead_type_explanation?: string
+  sentiments_explanation?: string
+  engagement_explanation?: string
+  confidence_explanation_executive?: string
+  confidence_explanation_person?: string
+  objections_detected?: string
+  objections_handling_details?: string
+  next_steps_detailed?: string
+  improvements_for_team?: string
+  call_outcome_rationale?: string
+  evidence_quotes?: string
   created_at: string
 }
 

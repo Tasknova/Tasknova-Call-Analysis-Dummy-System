@@ -9,22 +9,22 @@ export function useAnalysisNotifications() {
   const { user } = useAuth();
   const previousStatusesRef = useRef<Map<string, string>>(new Map());
   
-  // Query to check for all recordings with their current status
-  const { data: recordings } = useQuery({
-    queryKey: ['recording_statuses', user?.id],
+  // Query to check for all analyses with their current status
+  const { data: analyses } = useQuery({
+    queryKey: ['analysis_statuses', user?.id],
     queryFn: async () => {
       if (!user) return [];
       
       const { data, error } = await supabase
-        .from('recordings')
+        .from('analyses')
         .select(`
           id,
-          file_name,
           status,
-          analyses (
-            id,
-            sentiment_score,
-            engagement_score
+          sentiments_score,
+          engagement_score,
+          recording_id,
+          recordings (
+            file_name
           )
         `)
         .order('created_at', { ascending: false });
@@ -37,23 +37,20 @@ export function useAnalysisNotifications() {
   });
 
   useEffect(() => {
-    if (!recordings) return;
+    if (!analyses) return;
 
-    recordings.forEach(recording => {
-      const currentStatus = recording.status || 'unknown';
-      const previousStatus = previousStatusesRef.current.get(recording.id);
+    analyses.forEach(analysis => {
+      const currentStatus = analysis.status || 'unknown';
+      const previousStatus = previousStatusesRef.current.get(analysis.id);
       
-      // Only show notification when status changes to 'completed' and has analysis data
+      // Only show notification when status changes to 'completed' and has score data
       if (
         currentStatus === 'completed' && 
         previousStatus !== 'completed' && 
-        recording.analyses && 
-        recording.analyses.length > 0 &&
-        recording.analyses[0].sentiment_score !== null
+        analysis.sentiments_score !== null
       ) {
-        const analysis = recording.analyses[0];
-        const fileName = recording.file_name || 'Recording';
-        const sentimentScore = (analysis.sentiment_score || 0).toFixed(0);
+        const fileName = analysis.recordings?.file_name || 'Recording';
+        const sentimentScore = (analysis.sentiments_score || 0).toFixed(0);
         const engagementScore = (analysis.engagement_score || 0).toFixed(0);
         
         // Get emojis based on scores
@@ -71,18 +68,18 @@ export function useAnalysisNotifications() {
 
         toast({
           title: "🎉 Analysis Complete!",
-          description: `${fileName} - Sentiment: ${getSentimentEmoji(analysis.sentiment_score || 0)} ${sentimentScore}%, Engagement: ${getEngagementEmoji(analysis.engagement_score || 0)} ${engagementScore}%`,
+          description: `${fileName} - Sentiment: ${getSentimentEmoji(analysis.sentiments_score || 0)} ${sentimentScore}%, Engagement: ${getEngagementEmoji(analysis.engagement_score || 0)} ${engagementScore}%`,
           duration: 6000,
         });
       }
       
       // Update the status tracking
-      previousStatusesRef.current.set(recording.id, currentStatus);
+      previousStatusesRef.current.set(analysis.id, currentStatus);
     });
-  }, [recordings, toast]);
+  }, [analyses, toast]);
 
   return {
-    recordings: recordings || [],
-    completedRecordings: recordings?.filter(r => r.status === 'completed') || []
+    analyses: analyses || [],
+    completedAnalyses: analyses?.filter(a => a.status === 'completed') || []
   };
 }

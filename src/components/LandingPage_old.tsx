@@ -53,9 +53,11 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Navigation Bar - Minimal Luxury */}
       <nav className="bg-card border-b border-border sticky top-0 z-50 backdrop-blur-lg bg-card/95">
         <div className="max-w-7xl mx-auto px-8">
           <div className="flex justify-between items-center h-20">
+            {/* Left side - Logo */}
             <div className="flex items-center">
               <img 
                 src="/panchsil_logo.png.jpg" 
@@ -65,6 +67,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
               />
             </div>
             
+            {/* Right side - Auth buttons */}
             <div className="flex items-center space-x-6">
               <Button 
                 variant="ghost" 
@@ -78,6 +81,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
         </div>
       </nav>
 
+      {/* Hero Section - Luxury Minimal */}
       <section className="relative bg-background px-8 py-32 text-foreground">
         <div className="mx-auto max-w-7xl">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
@@ -117,9 +121,11 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
                     <div className="text-sm text-gray-600">Growth Analytics</div>
                   </div>
                   
+                  {/* Frequency Graph */}
                   <div className="relative h-32 w-full">
                     <svg className="w-full h-full" viewBox="0 0 300 120" preserveAspectRatio="none">
                       <defs>
+                        {/* Bar gradients */}
                         <linearGradient id="barGradient1" x1="0%" y1="100%" x2="0%" y2="0%">
                           <stop offset="0%" stopColor="#3b82f6" />
                           <stop offset="100%" stopColor="#60a5fa" />
@@ -134,6 +140,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
                         </linearGradient>
                       </defs>
                       
+                      {/* Grid lines */}
                       <g stroke="#e5e7eb" strokeWidth="0.5" opacity="0.5">
                         <line x1="0" y1="100" x2="300" y2="100" />
                         <line x1="0" y1="80" x2="300" y2="80" />
@@ -142,52 +149,63 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
                         <line x1="0" y1="20" x2="300" y2="20" />
                       </g>
                       
+                      {/* Frequency bars */}
                       <g>
+                        {/* Bar 1 */}
                         <rect x="20" y="70" width="15" height="30" fill="url(#barGradient1)" rx="2" className="drop-shadow-sm">
                           <animate attributeName="height" values="30;35;30" dur="2s" repeatCount="indefinite"/>
                           <animate attributeName="y" values="70;65;70" dur="2s" repeatCount="indefinite"/>
                         </rect>
                         
+                        {/* Bar 2 */}
                         <rect x="45" y="50" width="15" height="50" fill="url(#barGradient2)" rx="2" className="drop-shadow-sm">
                           <animate attributeName="height" values="50;55;50" dur="2s" begin="0.2s" repeatCount="indefinite"/>
                           <animate attributeName="y" values="50;45;50" dur="2s" begin="0.2s" repeatCount="indefinite"/>
                         </rect>
                         
+                        {/* Bar 3 */}
                         <rect x="70" y="40" width="15" height="60" fill="url(#barGradient3)" rx="2" className="drop-shadow-sm">
                           <animate attributeName="height" values="60;65;60" dur="2s" begin="0.4s" repeatCount="indefinite"/>
                           <animate attributeName="y" values="40;35;40" dur="2s" begin="0.4s" repeatCount="indefinite"/>
                         </rect>
                         
+                        {/* Bar 4 */}
                         <rect x="95" y="60" width="15" height="40" fill="url(#barGradient1)" rx="2" className="drop-shadow-sm">
                           <animate attributeName="height" values="40;45;40" dur="2s" begin="0.6s" repeatCount="indefinite"/>
                           <animate attributeName="y" values="60;55;60" dur="2s" begin="0.6s" repeatCount="indefinite"/>
                         </rect>
                         
+                        {/* Bar 5 */}
                         <rect x="120" y="30" width="15" height="70" fill="url(#barGradient3)" rx="2" className="drop-shadow-sm">
                           <animate attributeName="height" values="70;75;70" dur="2s" begin="0.8s" repeatCount="indefinite"/>
                           <animate attributeName="y" values="30;25;30" dur="2s" begin="0.8s" repeatCount="indefinite"/>
                         </rect>
                         
+                        {/* Bar 6 */}
                         <rect x="145" y="55" width="15" height="45" fill="url(#barGradient2)" rx="2" className="drop-shadow-sm">
                           <animate attributeName="height" values="45;50;45" dur="2s" begin="1s" repeatCount="indefinite"/>
                           <animate attributeName="y" values="55;50;55" dur="2s" begin="1s" repeatCount="indefinite"/>
                         </rect>
                         
+                        {/* Bar 7 */}
                         <rect x="170" y="25" width="15" height="75" fill="url(#barGradient3)" rx="2" className="drop-shadow-sm">
                           <animate attributeName="height" values="75;80;75" dur="2s" begin="1.2s" repeatCount="indefinite"/>
                           <animate attributeName="y" values="25;20;25" dur="2s" begin="1.2s" repeatCount="indefinite"/>
                         </rect>
                         
+                        {/* Bar 8 */}
                         <rect x="195" y="45" width="15" height="55" fill="url(#barGradient1)" rx="2" className="drop-shadow-sm">
                           <animate attributeName="height" values="55;60;55" dur="2s" begin="1.4s" repeatCount="indefinite"/>
                           <animate attributeName="y" values="45;40;45" dur="2s" begin="1.4s" repeatCount="indefinite"/>
                         </rect>
                         
+                        {/* Bar 9 */}
                         <rect x="220" y="35" width="15" height="65" fill="url(#barGradient2)" rx="2" className="drop-shadow-sm">
                           <animate attributeName="height" values="65;70;65" dur="2s" begin="1.6s" repeatCount="indefinite"/>
                           <animate attributeName="y" values="35;30;35" dur="2s" begin="1.6s" repeatCount="indefinite"/>
                         </rect>
                         
+                        {/* Bar 10 */}
                         <rect x="245" y="20" width="15" height="80" fill="url(#barGradient3)" rx="2" className="drop-shadow-sm">
                           <animate attributeName="height" values="80;85;80" dur="2s" begin="1.8s" repeatCount="indefinite"/>
                           <animate attributeName="y" values="20;15;20" dur="2s" begin="1.8s" repeatCount="indefinite"/>
@@ -208,6 +226,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
         </div>
       </section>
 
+      {/* Features Section - Grid Luxury Layout */}
       <section className="px-8 py-32 bg-card">
         <div className="mx-auto max-w-7xl">
           <div className="mb-20">
@@ -241,6 +260,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
         </div>
       </section>
 
+      {/* Benefits Section */
       <section className="bg-secondary px-6 py-20">
         <div className="mx-auto max-w-6xl">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -281,6 +301,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
         </div>
       </section>
 
+      {/* Footer */}
       <footer className="border-t bg-card px-6 py-8">
         <div className="mx-auto max-w-6xl">
           <div className="flex flex-col md:flex-row items-center justify-between">

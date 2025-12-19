@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +57,7 @@ function AllLeadsPage() {
   const { data: leads, isLoading, error } = useLeads();
   const deleteLead = useDeleteLead();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const filteredLeads = leads?.filter(lead => 
     lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -217,7 +219,11 @@ function AllLeadsPage() {
                 </TableHeader>
                 <TableBody>
                   {filteredLeads.map((lead) => (
-                    <TableRow key={lead.id}>
+                    <TableRow 
+                      key={lead.id} 
+                      className="cursor-pointer hover:bg-slate-50"
+                      onClick={() => navigate(`/lead/${lead.id}`)}
+                    >
                       <TableCell className="font-medium">{lead.name}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -252,7 +258,7 @@ function AllLeadsPage() {
                           <span className="text-muted-foreground">-</span>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="sm">

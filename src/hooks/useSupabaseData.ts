@@ -1,9 +1,37 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase, Recording, Analysis, MetricsAggregate, Lead, LeadGroup } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
+import { useEffect } from 'react'
 
 export function useRecordings() {
   const { user } = useAuth()
+  const queryClient = useQueryClient()
+  
+  // Set up real-time subscription
+  useEffect(() => {
+    if (!user) return
+
+    const channel = supabase
+      .channel('recordings-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'recordings',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          // Invalidate and refetch recordings when any change occurs
+          queryClient.invalidateQueries({ queryKey: ['recordings', user.id] })
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user, queryClient])
   
   return useQuery({
     queryKey: ['recordings', user?.id],
@@ -12,7 +40,14 @@ export function useRecordings() {
       
       const { data, error } = await supabase
         .from('recordings')
-        .select('*')
+        .select(`
+          *,
+          leads (
+            id,
+            name,
+            email
+          )
+        `)
         .order('created_at', { ascending: false })
       
       if (error) throw error
@@ -24,6 +59,35 @@ export function useRecordings() {
 
 export function useAnalyses() {
   const { user } = useAuth()
+  const queryClient = useQueryClient()
+  
+  // Set up real-time subscription for analyses
+  useEffect(() => {
+    if (!user) return
+
+    const channel = supabase
+      .channel('analyses-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'analyses',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          // Invalidate and refetch analyses when any change occurs
+          queryClient.invalidateQueries({ queryKey: ['analyses', user.id] })
+          // Also invalidate recordings since they show analysis status
+          queryClient.invalidateQueries({ queryKey: ['recordings', user.id] })
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user, queryClient])
   
   return useQuery({
     queryKey: ['analyses', user?.id],
@@ -81,45 +145,52 @@ export function useDashboardStats() {
 
       // Calculate KPIs
       const totalCalls = recordings.length
-      const avgSentiment = analyses.reduce((sum, a) => sum + (a.sentiment_score || 0), 0) / analyses.length
+      const avgSentiment = analyses.reduce((sum, a) => sum + (a.sentiments_score || 0), 0) / analyses.length
       const avgEngagement = analyses.reduce((sum, a) => sum + (a.engagement_score || 0), 0) / analyses.length
       const avgConfidenceExecutive = analyses.reduce((sum, a) => sum + (a.confidence_score_executive || 0), 0) / analyses.length
       const avgConfidencePerson = analyses.reduce((sum, a) => sum + (a.confidence_score_person || 0), 0) / analyses.length
-      const totalObjectionsHandled = analyses.filter(a => a.objections_handled && a.objections_handled !== 'None - customer was receptive and interested' && a.objections_handled !== 'None - strong alignment with growth challenges' && a.objections_handled !== 'None - enterprise client was highly engaged throughout').length
+      const totalObjectionsHandled = analyses.filter(a => a.objections_handeled && a.objections_handeled !== 'None - customer was receptive and interested' && a.objections_handeled !== 'None - strong alignment with growth challenges' && a.objections_handeled !== 'None - enterprise client was highly engaged throughout').length
       const successfulOutcomes = analyses.filter(a => a.call_outcome && !['Trial Setup', 'Awaiting Decision'].includes(a.call_outcome)).length
       
       // Additional KPIs
-      const highPerformingCalls = analyses.filter(a => (a.sentiment_score || 0) >= 80 && (a.engagement_score || 0) >= 75).length
+      const highPerformingCalls = analyses.filter(a => (a.sentiments_score || 0) >= 80 && (a.engagement_score || 0) >= 75).length
       const callsWithNextSteps = analyses.filter(a => a.next_steps && a.next_steps !== 'TBD' && a.next_steps.trim().length > 10).length
-      const totalObjectionsRaised = analyses.reduce((sum, a) => sum + (a.objections_raised || 0), 0)
-      const totalObjectionsTackled = analyses.reduce((sum, a) => sum + (a.objections_tackled || 0), 0)
+      
+      // Calculate objection statistics from analysis data
+      const totalObjectionsRaised = analyses.reduce((sum, a) => sum + (a.no_of_objections_detected || 0), 0)
+      const totalObjectionsTackled = analyses.reduce((sum, a) => sum + (a.no_of_objections_handeled || 0), 0)
       const objectionSuccessRate = totalObjectionsRaised > 0 ? (totalObjectionsTackled / totalObjectionsRaised) * 100 : 0
+
+      // Lead Type Statistics
+      const hotLeads = analyses.filter(a => a.lead_type?.toLowerCase().includes('hot')).length
+      const warmLeads = analyses.filter(a => a.lead_type?.toLowerCase().includes('warm')).length
+      const coldLeads = analyses.filter(a => a.lead_type?.toLowerCase().includes('cold')).length
 
       // Sentiment distribution - 5 categories
       const sentimentData = [
         { 
           name: 'Perfect', 
-          value: analyses.filter(a => (a.sentiment_score || 0) >= 90).length,
+          value: analyses.filter(a => (a.sentiments_score || 0) >= 90).length,
           color: '#10B981' // Emerald green for perfect
         },
         { 
           name: 'Excellent', 
-          value: analyses.filter(a => (a.sentiment_score || 0) >= 80 && (a.sentiment_score || 0) < 90).length,
+          value: analyses.filter(a => (a.sentiments_score || 0) >= 80 && (a.sentiments_score || 0) < 90).length,
           color: '#059669' // Dark green for excellent
         },
         { 
           name: 'Good', 
-          value: analyses.filter(a => (a.sentiment_score || 0) >= 70 && (a.sentiment_score || 0) < 80).length,
+          value: analyses.filter(a => (a.sentiments_score || 0) >= 70 && (a.sentiments_score || 0) < 80).length,
           color: 'hsl(var(--accent-blue))' // Blue for good
         },
         { 
           name: 'Neutral', 
-          value: analyses.filter(a => (a.sentiment_score || 0) >= 50 && (a.sentiment_score || 0) < 70).length,
+          value: analyses.filter(a => (a.sentiments_score || 0) >= 50 && (a.sentiments_score || 0) < 70).length,
           color: '#F59E0B' // Amber for neutral
         },
         { 
           name: 'Negative', 
-          value: analyses.filter(a => (a.sentiment_score || 0) < 50).length,
+          value: analyses.filter(a => (a.sentiments_score || 0) < 50).length,
           color: '#EF4444' // Red for negative
         }
       ]
@@ -142,11 +213,11 @@ export function useDashboardStats() {
 
       // Objection handling analysis
       const objectionData = [
-        { category: 'Budget/Price', count: analyses.filter(a => a.objections_handled?.toLowerCase().includes('budget') || a.objections_handled?.toLowerCase().includes('price')).length },
-        { category: 'Timeline', count: analyses.filter(a => a.objections_handled?.toLowerCase().includes('timeline')).length },
-        { category: 'Authority', count: analyses.filter(a => a.objections_handled?.toLowerCase().includes('authority') || a.objections_handled?.toLowerCase().includes('decision')).length },
-        { category: 'Competition', count: analyses.filter(a => a.objections_handled?.toLowerCase().includes('competition') || a.objections_handled?.toLowerCase().includes('competitor')).length },
-        { category: 'None', count: analyses.filter(a => a.objections_handled?.toLowerCase().includes('none')).length }
+        { category: 'Budget/Price', count: analyses.filter(a => a.objections_handeled?.toLowerCase().includes('budget') || a.objections_handeled?.toLowerCase().includes('price')).length },
+        { category: 'Timeline', count: analyses.filter(a => a.objections_handeled?.toLowerCase().includes('timeline')).length },
+        { category: 'Authority', count: analyses.filter(a => a.objections_handeled?.toLowerCase().includes('authority') || a.objections_handeled?.toLowerCase().includes('decision')).length },
+        { category: 'Competition', count: analyses.filter(a => a.objections_handeled?.toLowerCase().includes('competition') || a.objections_handeled?.toLowerCase().includes('competitor')).length },
+        { category: 'None', count: analyses.filter(a => a.objections_handeled?.toLowerCase().includes('none')).length }
       ]
 
       return {
@@ -161,7 +232,10 @@ export function useDashboardStats() {
           callsWithNextSteps,
           totalObjectionsRaised,
           totalObjectionsTackled,
-          objectionSuccessRate
+          objectionSuccessRate,
+          hotLeads,
+          warmLeads,
+          coldLeads
         },
         sentimentData,
         trendData,
@@ -172,7 +246,7 @@ export function useDashboardStats() {
         last10CallsSentiment: analyses.slice(0, 10).reverse().map((analysis, index) => ({
           call: `Call ${index + 1}`,
           callName: analysis.recordings?.file_name?.replace('.mp3', '').substring(0, 10) || `Call ${index + 1}`,
-          sentiment: Math.round(analysis.sentiment_score || 0),
+          sentiment: Math.round(analysis.sentiments_score || 0),
           date: new Date(analysis.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
         })),
         
@@ -189,8 +263,8 @@ export function useDashboardStats() {
         last10CallsObjections: analyses.slice(0, 10).reverse().map((analysis, index) => ({
           call: `Call ${index + 1}`,
           callName: analysis.recordings?.file_name?.replace('.mp3', '').substring(0, 8) || `Call ${index + 1}`,
-          raised: analysis.objections_raised || 0,
-          tackled: analysis.objections_tackled || 0,
+          raised: 0,
+          tackled: 0,
           date: new Date(analysis.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
         })),
         
@@ -201,12 +275,12 @@ export function useDashboardStats() {
           duration: analysis.recordings?.duration_seconds ? 
             `${Math.floor(analysis.recordings.duration_seconds / 60)}:${(analysis.recordings.duration_seconds % 60).toString().padStart(2, '0')}` : 
             'N/A',
-          sentiment: analysis.sentiment_score || 0,
+          sentiment: analysis.sentiments_score || 0,
           engagement: analysis.engagement_score || 0,
           confidenceExecutive: analysis.confidence_score_executive || 0,
           confidencePerson: analysis.confidence_score_person || 0,
           status: 'completed',
-          objections: analysis.objections_handled || 'None',
+          objections: analysis.objections_handeled || 'None',
           nextSteps: analysis.next_steps || 'TBD',
           improvements: analysis.improvements || 'None',
           callOutcome: analysis.call_outcome || 'Unknown'

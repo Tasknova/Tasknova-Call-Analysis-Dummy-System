@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Upload, Play, Download, MoreHorizontal, TrendingUp, TrendingDown, Users, Phone, Star, AlertTriangle, Trash2, BarChart3, Loader2, User, UserPlus, FolderOpen, FileSpreadsheet, RefreshCw } from "lucide-react";
+import { Upload, Play, Download, MoreHorizontal, TrendingUp, TrendingDown, Users, Phone, Star, AlertTriangle, Trash2, BarChart3, Loader2, User, UserPlus, FolderOpen, FileSpreadsheet, RefreshCw, Smile, Meh, Frown, Flame, ThumbsUp, ThumbsDown, Zap, HelpCircle, AlertCircle } from "lucide-react";
 import { useDashboardStats, useRecordings, useAnalyses, useDeleteRecording } from "@/hooks/useSupabaseData";
 import AddRecordingModal from "./AddRecordingModal";
 import AllLeadsPage from "./AllLeadsPage";
@@ -39,7 +39,7 @@ export default function Dashboard({ onShowProfile }: DashboardProps) {
   // Handle tab parameter from URL
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['overview', 'recordings', 'analytics', 'leads'].includes(tab)) {
+    if (tab && ['overview', 'recordings', 'leads'].includes(tab)) {
       setSelectedTab(tab);
     }
   }, [searchParams]);
@@ -50,23 +50,23 @@ export default function Dashboard({ onShowProfile }: DashboardProps) {
     return "text-warning";
   };
 
-  const getSentimentEmoji = (score: number) => {
-    if (score >= 80) return "😊"; // Happy
-    if (score >= 60) return "😐"; // Neutral
-    return "😔"; // Sad/Concerned
+  const getSentimentIcon = (score: number) => {
+    if (score >= 80) return <Smile className="h-4 w-4" />;
+    if (score >= 60) return <Meh className="h-4 w-4" />;
+    return <Frown className="h-4 w-4" />;
   };
 
-  const getEngagementEmoji = (score: number) => {
-    if (score >= 80) return "🔥"; // High engagement
-    if (score >= 60) return "👍"; // Good engagement
-    return "👎"; // Low engagement
+  const getEngagementIcon = (score: number) => {
+    if (score >= 80) return <Flame className="h-4 w-4" />;
+    if (score >= 60) return <ThumbsUp className="h-4 w-4" />;
+    return <ThumbsDown className="h-4 w-4" />;
   };
 
-  const getConfidenceEmoji = (score: number) => {
-    if (score >= 8) return "💪"; // High confidence
-    if (score >= 6) return "👍"; // Good confidence
-    if (score >= 4) return "🤔"; // Moderate confidence
-    return "😰"; // Low confidence
+  const getConfidenceIcon = (score: number) => {
+    if (score >= 8) return <Zap className="h-4 w-4" />;
+    if (score >= 6) return <ThumbsUp className="h-4 w-4" />;
+    if (score >= 4) return <HelpCircle className="h-4 w-4" />;
+    return <AlertCircle className="h-4 w-4" />;
   };
 
   const getConfidenceColor = (score: number) => {
@@ -171,7 +171,7 @@ export default function Dashboard({ onShowProfile }: DashboardProps) {
   };
 
   const handleRecordingClick = (analysis: Analysis | null, recording: any, recordingName: string) => {
-    if (analysis && analysis.detailed_call_analysis) {
+    if (analysis && analysis.status?.toLowerCase() === 'completed') {
       navigate(`/analysis/${analysis.id}`);
     } else {
       toast({
@@ -268,17 +268,6 @@ export default function Dashboard({ onShowProfile }: DashboardProps) {
               <h1 className="text-xl font-semibold text-foreground tracking-wide">Voice Intelligence</h1>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="default" 
-              size="default" 
-              className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground tracking-wide uppercase text-sm font-medium px-6"
-              onClick={() => setIsAddModalOpen(true)}
-            >
-              <Upload className="h-4 w-4" />
-              Upload Recording
-            </Button>
-          </div>
         </div>
       </header>
 
@@ -300,15 +289,7 @@ export default function Dashboard({ onShowProfile }: DashboardProps) {
                 onClick={() => setSelectedTab("recordings")}
               >
                 <Phone className="h-4 w-4 mr-3" />
-                Recordings
-              </Button>
-              <Button 
-                variant={selectedTab === "analytics" ? "default" : "ghost"} 
-                className={`w-full justify-start font-medium tracking-wide text-sm uppercase transition-all ${selectedTab === "analytics" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                onClick={() => setSelectedTab("analytics")}
-              >
-                <BarChart3 className="h-4 w-4 mr-3" />
-                Analytics
+                Call History
               </Button>
               
               {/* Leads Section */}
@@ -319,15 +300,6 @@ export default function Dashboard({ onShowProfile }: DashboardProps) {
               >
                 <UserPlus className="h-4 w-4 mr-3" />
                 Leads
-              </Button>
-              
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start text-muted-foreground hover:text-foreground font-medium tracking-wide text-sm uppercase transition-all mt-6"
-                onClick={onShowProfile}
-              >
-                <User className="h-4 w-4 mr-3" />
-                Profile
               </Button>
           </nav>
         </aside>
@@ -470,6 +442,51 @@ export default function Dashboard({ onShowProfile }: DashboardProps) {
                     </p>
                   </CardContent>
                 </Card>
+
+                <Card className="border-l-4 border-l-rose-500 hover:shadow-md transition-shadow duration-200">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Hot Leads</CardTitle>
+                    <Flame className="h-4 w-4 text-rose-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-rose-600">
+                      {kpiData.hotLeads || 0}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      High priority prospects
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-l-4 border-l-amber-500 hover:shadow-md transition-shadow duration-200">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Warm Leads</CardTitle>
+                    <Smile className="h-4 w-4 text-amber-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-amber-600">
+                      {kpiData.warmLeads || 0}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Interested prospects
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-l-4 border-l-blue-500 hover:shadow-md transition-shadow duration-200">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Cold Leads</CardTitle>
+                    <Meh className="h-4 w-4 text-blue-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {kpiData.coldLeads || 0}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Early stage prospects
+                    </p>
+                  </CardContent>
+                </Card>
               </div>
 
               {/* Last 10 Calls Analysis Charts */}
@@ -595,7 +612,7 @@ export default function Dashboard({ onShowProfile }: DashboardProps) {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0">
                   <div>
-                    <CardTitle>All Recordings</CardTitle>
+                    <CardTitle>Call History</CardTitle>
                     <CardDescription>Complete history of your call recordings and analyses</CardDescription>
                   </div>
                   <Button 
@@ -605,7 +622,7 @@ export default function Dashboard({ onShowProfile }: DashboardProps) {
                     onClick={() => setIsAddModalOpen(true)}
                   >
                     <Upload className="h-4 w-4" />
-                    Add Recording
+                    Add Call
                   </Button>
                 </CardHeader>
                 <CardContent>
@@ -625,78 +642,59 @@ export default function Dashboard({ onShowProfile }: DashboardProps) {
                       </Button>
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {recordings.map((recording) => {
                         const analysis = analyses?.find(a => a.recording_id === recording.id);
-                        const hasDetailedAnalysis = analysis && analysis.detailed_call_analysis;
+                        const hasDetailedAnalysis = analysis && analysis.status?.toLowerCase() === 'completed';
                         return (
                           <div 
                             key={recording.id} 
-                            className={`flex items-center justify-between p-4 border rounded-lg transition-colors ${
+                            className={`flex items-center justify-between p-4 border rounded-lg transition-all hover:shadow-md ${
                               hasDetailedAnalysis 
-                                ? 'hover:bg-accent/50 cursor-pointer' 
-                                : 'opacity-75'
+                                ? 'hover:bg-blue-50/50 cursor-pointer border-slate-200' 
+                                : 'bg-slate-50/50 border-slate-200'
                             }`}
                             onClick={() => handleRecordingClick(analysis, recording, recording.file_name || 'Unnamed Recording')}
                           >
-                            <div className="flex items-center space-x-4">
-                              <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
-                                <Play className="h-4 w-4" />
-                              </Button>
-                              <div>
-                                <h4 className="font-medium flex items-center gap-2">
+                            <div className="flex items-center gap-4 flex-1">
+                              <div className="p-2 bg-blue-100 rounded-lg">
+                                <Phone className="h-5 w-5 text-blue-600" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold text-slate-900 truncate">
                                   {recording.file_name || 'Unnamed Recording'}
-                                  {hasDetailedAnalysis && (
-                                    <Badge variant="secondary" className="text-xs">
-                                      Click for details
-                                    </Badge>
-                                  )}
                                 </h4>
-                                <p className="text-sm text-muted-foreground">
-                                  {new Date(recording.created_at).toLocaleDateString()} • 
-                                  {recording.duration_seconds ? ` ${Math.floor(recording.duration_seconds / 60)}:${(recording.duration_seconds % 60).toString().padStart(2, '0')}` : ' Duration unknown'}
-                                </p>
+                                <div className="flex items-center gap-3 mt-1">
+                                  {recording.leads ? (
+                                    <p className="text-sm text-slate-600 flex items-center gap-1">
+                                      <User className="h-3 w-3" />
+                                      <span className="font-medium">{recording.leads.name}</span>
+                                    </p>
+                                  ) : (
+                                    <p className="text-sm text-slate-400 flex items-center gap-1">
+                                      <User className="h-3 w-3" />
+                                      No lead assigned
+                                    </p>
+                                  )}
+                                  {recording.call_date && (
+                                    <p className="text-sm text-slate-500">
+                                      • {new Date(recording.call_date).toLocaleDateString('en-US', { 
+                                        month: 'short', 
+                                        day: 'numeric', 
+                                        year: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      })}
+                                    </p>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                            <div className="flex items-center space-x-6">
-                              {analysis ? (
-                                <>
-                                  <div className="text-center">
-                                    <p className="text-xs text-muted-foreground">Sentiment</p>
-                                    <p className={`font-medium ${getSentimentColor(analysis.sentiment_score || 0)} flex items-center justify-center gap-1`}>
-                                      <span className="text-lg">{getSentimentEmoji(analysis.sentiment_score || 0)}</span>
-                                      {analysis.sentiment_score || 0}%
-                                    </p>
-                                  </div>
-                                  <div className="text-center">
-                                    <p className="text-xs text-muted-foreground">Engagement</p>
-                                    <p className="font-medium text-accent-blue flex items-center justify-center gap-1">
-                                      <span className="text-lg">{getEngagementEmoji(analysis.engagement_score || 0)}</span>
-                                      {analysis.engagement_score || 0}%
-                                    </p>
-                                  </div>
-                                  <div className="text-center">
-                                    <p className="text-xs text-muted-foreground">Exec Conf.</p>
-                                    <p className={`font-medium ${getConfidenceColor(analysis.confidence_score_executive || 0)} flex items-center justify-center gap-1`}>
-                                      <span className="text-lg">{getConfidenceEmoji(analysis.confidence_score_executive || 0)}</span>
-                                      {analysis.confidence_score_executive || 0}/10
-                                    </p>
-                                  </div>
-                                  <div className="text-center">
-                                    <p className="text-xs text-muted-foreground">Person Conf.</p>
-                                    <p className={`font-medium ${getConfidenceColor(analysis.confidence_score_person || 0)} flex items-center justify-center gap-1`}>
-                                      <span className="text-lg">{getConfidenceEmoji(analysis.confidence_score_person || 0)}</span>
-                                      {analysis.confidence_score_person || 0}/10
-                                    </p>
-                                  </div>
-                                </>
-                              ) : (
-                                <div className="text-center">
-                                  <p className="text-sm text-muted-foreground">Analysis pending...</p>
-                                </div>
-                              )}
-                              {getStatusBadge(recording.status || 'unknown')}
-                              {(recording.status === 'failed' || recording.status === 'error') && (
+                            
+                            <div className="flex items-center gap-3">
+                              {getStatusBadge(analysis?.status || 'pending')}
+                              
+                              {(analysis?.status === 'failed' || analysis?.status === 'error') && (
                                 <Button 
                                   variant="outline" 
                                   size="sm"
@@ -704,12 +702,13 @@ export default function Dashboard({ onShowProfile }: DashboardProps) {
                                     e.stopPropagation();
                                     handleRetryRecording(recording, analysis);
                                   }}
-                                  className="text-accent-blue hover:bg-accent-blue/10 border-accent-blue"
+                                  className="text-blue-600 hover:bg-blue-50 border-blue-200"
                                 >
                                   <RefreshCw className="h-4 w-4 mr-1" />
                                   Retry
                                 </Button>
                               )}
+                              
                               <Button 
                                 variant="ghost" 
                                 size="icon"
@@ -718,12 +717,9 @@ export default function Dashboard({ onShowProfile }: DashboardProps) {
                                   handleDeleteRecording(recording.id, recording.file_name || 'Unnamed Recording');
                                 }}
                                 disabled={deleteRecording.isPending}
-                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                className="text-slate-400 hover:text-rose-600 hover:bg-rose-50"
                               >
                                 <Trash2 className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
-                                <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </div>
                           </div>
@@ -735,198 +731,7 @@ export default function Dashboard({ onShowProfile }: DashboardProps) {
               </Card>
             </TabsContent>
 
-            <TabsContent value="analytics" className="space-y-6">
-              {/* Charts moved from Dashboard Overview */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Sentiment Distribution</CardTitle>
-                    <CardDescription>Breakdown of call sentiments this week</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <PieChart>
-                        <Pie
-                          data={sentimentData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={60}
-                          outerRadius={120}
-                          paddingAngle={5}
-                          dataKey="value"
-                        >
-                          {sentimentData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Sentiment & Engagement Trends</CardTitle>
-                    <CardDescription>Call-wise performance analysis</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <LineChart data={last10CallsSentiment.map((call, index) => ({
-                        call: call.call,
-                        callName: call.callName,
-                        date: call.date,
-                        sentiment: call.sentiment,
-                        engagement: last10CallsConfidence[index]?.executive ? 
-                          Math.min(((last10CallsConfidence[index].executive + last10CallsConfidence[index].person) / 2) * 10, 100) : 
-                          Math.floor(Math.random() * 30) + 60 // fallback engagement data between 60-90%
-                      }))}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis 
-                          dataKey="call" 
-                          tick={{ fontSize: 12 }}
-                          interval={0}
-                          angle={-45}
-                          textAnchor="end"
-                          height={80}
-                        />
-                        <YAxis domain={[0, 100]} />
-                        <Tooltip 
-                          formatter={(value, name) => [
-                            `${value}${name === 'sentiment' ? '%' : '%'}`, 
-                            name === 'sentiment' ? 'Sentiment' : 'Engagement'
-                          ]}
-                          labelFormatter={(label) => {
-                            const item = last10CallsSentiment.find(d => d.call === label);
-                            return item ? `${item.callName} (${item.date})` : label;
-                          }}
-                        />
-                        <Legend />
-                        <Line 
-                          type="monotone" 
-                          dataKey="sentiment" 
-                          stroke="hsl(var(--success))" 
-                          strokeWidth={3}
-                          dot={{ fill: 'hsl(var(--success))', strokeWidth: 2, r: 4 }}
-                          activeDot={{ r: 6, stroke: 'hsl(var(--success))', strokeWidth: 2 }}
-                          name="Sentiment"
-                        />
-                        <Line 
-                          type="monotone" 
-                          dataKey="engagement" 
-                          stroke="hsl(var(--accent-blue))" 
-                          strokeWidth={3}
-                          dot={{ fill: 'hsl(var(--accent-blue))', strokeWidth: 2, r: 4 }}
-                          activeDot={{ r: 6, stroke: 'hsl(var(--accent-blue))', strokeWidth: 2 }}
-                          name="Engagement"
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Additional Data Visualizations */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Confidence Score Trends</CardTitle>
-                    <CardDescription>Executive vs Person confidence comparison</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <LineChart data={last10CallsConfidence}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="call" />
-                        <YAxis domain={[0, 10]} />
-                        <Tooltip />
-                        <Line type="monotone" dataKey="executive" stroke="hsl(var(--accent-blue))" strokeWidth={2} />
-                        <Line type="monotone" dataKey="person" stroke="hsl(var(--success))" strokeWidth={2} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Objections: Raised vs Tackled</CardTitle>
-                    <CardDescription>Last 10 calls objection handling</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={last10CallsObjections}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="call" />
-                        <YAxis />
-                        <Tooltip 
-                          formatter={(value, name) => [`${value}`, name === 'raised' ? 'Objections Raised' : 'Objections Tackled']}
-                          labelFormatter={(label) => {
-                            const item = last10CallsObjections?.find(d => d.call === label);
-                            return item ? `${item.callName} (${item.date})` : label;
-                          }}
-                        />
-                        <Legend />
-                        <Bar dataKey="raised" fill="#F59E0B" name="Raised" radius={[2, 2, 0, 0]} />
-                        <Bar dataKey="tackled" fill="#10B981" name="Tackled" radius={[2, 2, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Additional Charts */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Performance Score Distribution</CardTitle>
-                    <CardDescription>Combined sentiment & engagement performance</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={250}>
-                      <BarChart data={[
-                        { range: '90-100%', count: (recentCalls || []).filter(c => (c.sentiment + c.engagement) / 2 >= 90).length, color: 'hsl(var(--success))' },
-                        { range: '80-89%', count: (recentCalls || []).filter(c => (c.sentiment + c.engagement) / 2 >= 80 && (c.sentiment + c.engagement) / 2 < 90).length, color: 'hsl(var(--accent-blue))' },
-                        { range: '70-79%', count: (recentCalls || []).filter(c => (c.sentiment + c.engagement) / 2 >= 70 && (c.sentiment + c.engagement) / 2 < 80).length, color: 'hsl(var(--warning))' },
-                        { range: '<70%', count: (recentCalls || []).filter(c => (c.sentiment + c.engagement) / 2 < 70).length, color: 'hsl(var(--destructive))' }
-                      ]}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="range" />
-                        <YAxis />
-                        <Tooltip />
-                        <Bar dataKey="count" fill="hsl(var(--accent-blue))" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Engagement Levels</CardTitle>
-                    <CardDescription>Distribution of engagement scores</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={250}>
-                      <BarChart data={engagementData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="level" />
-                        <YAxis />
-                        <Tooltip />
-                        <Bar dataKey="count">
-                          {engagementData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.fill} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-
-
-              </div>
-            </TabsContent>
-
-            {/* Unified Leads Tab */}
+            {/* Leads Tab */}
             <TabsContent value="leads" className="space-y-6">
               <div>
                 <div className="flex items-center justify-between mb-6">
